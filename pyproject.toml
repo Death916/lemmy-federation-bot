@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "lemmy-fed-bot"
+version = "0.1.0"
+description = "Find communities and instances to subscribe to and use a \"bot\" to subscribe to them from your instance for federation"
+authors = ["TrentN <mail@trentnelson.dev>"]
+readme = "README.md"
+packages = [{include = "lemmy_fed_bot"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
