@@ -4,7 +4,7 @@ import datetime
 
 START_TIME = 0
 END_TIME = 0
-
+DEBUG = True
 class communities:
     def __init__(self):
         self.url = '/api/v3/community/list/list?type_=Local'
@@ -27,7 +27,10 @@ class communities:
 class instance:
     def __init__(self):
         self.min_users = 50
-        self.debug = True
+        
+        self.data = {}
+
+    # get_instance_list
     def get_instances(self):
         url = "https://api.fediverse.observer"
 
@@ -62,21 +65,25 @@ class instance:
         """
 
         response = requests.post(url=url, json={"query": payload})
-        data = response.json()
-        x=data["data"]["nodes"][3]
-        print(data)
-        def debug():
-            if debug == True:
-                for i, node in enumerate(x["data"]["nodes"]):
-                    print(f"Node {i}:")
-                    print(node["domain"])
-                    print(node["name"])
-                    print(node["metatitle"])
-                    print(node["metadescription"])
-                    print("users:" + str(node["total_users"]))
-                    print(node["date_created"])
-                    print("node number:" + str(i))
-                    print("total nodes:" + str(len(x["data"]["nodes"])))
+        self.data = response.json()
+       
+        #print(self.data)
+        return self.data
+
+
+        
+
+
+
+class sub_chooser():
+    def __init__(self):
+        self.min_users = 50
+        self.debug = True
+        self.instance_name = ""
+        self.community_name = ""
+        
+
+
 
 
 class timer():
@@ -96,6 +103,37 @@ class timer():
     
     
 
-timer.start()
 
+
+def debug():
+            
+                print('---------------debugging ------------')
+                instances = instance()
+                instances = instances.get_instances()
+                for i, node in enumerate(instances["data"]["nodes"]):
+                    print(f"Node {i}:")
+                    print(node["domain"])
+                    print(node["name"])
+                    print(node["metatitle"])
+                    print(node["metadescription"])
+                    print("users:" + str(node["total_users"]))
+                    print(node["date_created"])
+                    print("node number:" + str(i))
+                    print("total nodes:" + str(len(instances["data"]["nodes"])))
+
+                print('---------------end debugging ------------')   
+
+def main():
+    timers = timer()
+    timers.start()
+    if DEBUG == True:
+        debug()
+        timers.end()
+        timers.elapsed()
+    else:
+        instance_data = instance.get_instance()
+
+if __name__ == "__main__":
+    main()
+    
 
