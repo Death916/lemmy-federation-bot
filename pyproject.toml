@@ -8,6 +8,8 @@ packages = [{include = "lemmy_fed_bot"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+requests = "^2.31.0"
+plemmy = "^0.2.2"
 
 
 [build-system]

@@ -3,11 +3,13 @@ import time
 import datetime
 import os
 import json
+from plemmy import LemmyHttp
 
 
 START_TIME = 0
 END_TIME = 0
 DEBUG = True
+RATE_LIMIT = 3
 class communities:
     def __init__(self, instance_list):
         self.url = '/api/v3/community/list?type_=Local'
@@ -15,40 +17,79 @@ class communities:
         self.page = "1"
         self. community_list = []
         self.instance_list = instance_list
-        
+        self.limit = 50 #amount of results per page
         self.total = 0
         self.instance = 0
         self.min_users = 10
+        self.site_captcha_enabled = []
 
 
-    def get_community_list(self):
+    def get_community_list(self,):
         instance_list = self.instance_list
         limit=self.limit
         
-        for i in instance_list:
-            instance_domain = i['domain']
+           #TODO: REMOVE OR CLEANUP THIS DEBUG
+
+        if DEBUG == True:
+            instance_domain = "lemmy.death916.xyz"
             combined_url ="https://" +  str(instance_domain) + self.url + '&page' + self.page + '&limit=' + str(limit)
             print(combined_url)
-            x = requests.get(combined_url)
-            print(x)
-            if x.status_code == 200:
-                 self.community_list = []
-                 self.community_list.append(i)
-                 self.total = len(self.community_list)
-                 self.page = str(int(self.page) + 1)
-                 
-                 print("total communities found: " + self.total)
-            else:
-             print("Error: " + str(x.status_code))
-             continue
         
+            response= requests.get(combined_url)
+            print(response)
+            print(response.json())
+            community_json = response.json()
+            
+            
+            if response.status_code == 200:
+                self.community_list.append(community_json)
+                self.total = len(self.community_list)
+
+                # write to file
+                with open('community_list.json', 'w') as f:
+                    json.dump(self.community_list, f)
+                for i in community_json['communities']:
+                   print(i['community']['name'])
+                   print(i['community']['id'])
+               
+            else:
+                print(x.status_code)
+                print(x.text)
+                
+        else:
+            for i in instance_list:
+
+                instance_domain = i['domain']
+                combined_url ="https://" +  str(instance_domain) + self.url + '&page' + self.page + '&limit=' + str(limit)
+                print(combined_url)
+        
+                try:
+                    x = requests.get(combined_url)
+                    print(x)
+                    if x.status_code == 200:
+                        self.community_list.append(i)
+                        self.total = len(self.community_list)
+                        self.page = str(int(self.page) + 1)
+                        
+                        print("total communities found: " + str(self.total))
+
+                except Exception as e:
+                                print(e)
+                                print("error getting community list")
+                                continue
+                                
+    def parse_community_list(self, community_json):
+         for i in community_json['communities']:
+                   print(i['community']['name'])
+
+         
 
         
-        
-      
 class instance:
-    def __init__(self):
-        self.min_users = 50
+    def __init__(self, debug, **kwargs):
+        self.min_users = kwargs['min_users']
+        self.debug = DEBUG
+        
         
 
     # get_instance_list
@@ -80,36 +121,36 @@ class instance:
             active_users_halfyear
             score
             status
-            signup
+            signupz
         }
         }
         """
-
-        response = requests.post(url=url, json={"query": payload})
-        instance_data = response.json()
+        if self.debug  and os.path.exists('./debug.json'):
+            pass
+        else:
+            response = requests.post(url=url, json={"query": payload})
+            instance_data = response.json()
        
-        filtered_json_data = []
-        for i,  entry in enumerate(instance_data["data"]["nodes"]):
-            if entry['total_users'] >= 50:
-                filtered_json_data.append(entry)
-        open('debug.json', 'w')
-        json.dump(filtered_json_data, open('debug.json', 'w'))
-        return filtered_json_data
-
-
+            filtered_json_data = []
+            for i,  entry in enumerate(instance_data["data"]["nodes"]):
+                if entry['active_users_monthly'] >= self.min_users and entry['status'] == 1:
+                    filtered_json_data.append(entry)
+      
+            open('debug.json', 'w')
+            json.dump(filtered_json_data, open('debug.json', 'w'))
+            return filtered_json_data
+'''''
+class user(self, instance, username, password,):
+     def __init__(self,  **kwargs):
+          self.username = kwargs['username']
+          self.password = kwargs['password']
+       
+     def login(self):
+          password = self.password
+          username = self.username
+'''
+   
         
-
-
-
-class sub_chooser():
-    def __init__(self):
-        self.min_users = 50
-        self.debug = True
-        self.instance_name = ""
-        self.community_name = ""
-        
-
-
 
 
 class timer():
@@ -139,11 +180,11 @@ def debug():
                     instance_json = open('debug.json', 'r')
                     filtered_json_data = json.load(instance_json)
                 else:
-                    instances = instance()
+                    instances = instance(DEBUG, min_users=1)
                     filtered_json_data = instances.get_instances()
                     open('debug.json', 'w')
                     json.dump(filtered_json_data, open('debug.json', 'w'))
-                # remove instances with less than 50 users
+                
              
                 counter = 0
                 for i in (filtered_json_data):  
@@ -153,7 +194,7 @@ def debug():
                     print("name: " + i["name"])
                     print("metatitle: " + str(i["metatitle"])) 
                     print("metadescription: " + str(i["metadescription"]))
-                    print("users: " + str(i["total_users"])) 
+                    print("active users: " + str(i["active_users_monthly"])) 
                     print("date_created: " + i["date_created"])
                     checked_instances = []                     
                     print("total nodes: " + str(len(filtered_json_data)))
@@ -163,6 +204,11 @@ def debug():
                 communitiy_list = communities(filtered_json_data)
                 communitiy_list.get_community_list()
 
+                follow = LemmyHttp('https://lemmy.death916.xyz')
+                username = input("enter admin username: ")
+                password = input("enter admin password: ")
+                follow.login(username, password)
+                follow.follow_community
                  
 
                 print('---------------end debugging ------------')   
@@ -175,6 +221,7 @@ def main():
         timers.end()
         timers.elapsed()
     else:
+
         instance_data = instance()
         instance_data = instance_data.get_instances()
      
